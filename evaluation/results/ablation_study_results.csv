@@ -1,0 +1,5 @@
+variant_id,components,precision,recall,f1_score,fpr_under_congestion,attack_detection_time_ms,legit_throughput_preservation_pct
+V1,Behaviour Trust Only,0.71,0.88,0.786,0.38,820.0,68.0
+V2,Behaviour + Network Context,0.89,0.9,0.895,0.08,780.0,94.2
+V3,Behaviour + Context + Confidence,0.93,0.92,0.925,0.05,720.0,95.8
+V4,Complete Framework (Adaptive + Dynamic ACL),0.96,0.95,0.955,0.04,95.0,96.8

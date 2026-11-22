@@ -1,0 +1,31 @@
+# Dynamic Zero Trust Access Control List (Mosquitto ACL)
+# Regenerated dynamically based on real-time continuous trust evaluations
+
+# Device: energy_meter_03 | Policy: ALLOW | Trust: 99.8
+user energy_meter_03
+topic write factory/energy/energy_meter_03
+topic write factory/telemetry/heartbeat
+topic read factory/config/energy_meter_03
+
+# Device: humidity_sensor_02 | Policy: ALLOW | Trust: 85.1
+user humidity_sensor_02
+topic write factory/humidity/humidity_sensor_02
+topic write factory/telemetry/heartbeat
+topic read factory/config/humidity_sensor_02
+
+# Device: motor_controller_04 | Policy: ALLOW | Trust: 96.0
+user motor_controller_04
+topic write factory/motor/status
+topic write factory/telemetry/heartbeat
+topic read factory/motor/commands
+
+# Device: smart_camera_05 | Policy: ALLOW | Trust: 95.7
+user smart_camera_05
+topic write factory/camera/stream_meta
+topic write factory/camera/events
+topic write factory/telemetry/heartbeat
+topic read factory/camera/config
+
+# Device: temperature_sensor_01 | Policy: DENY | Trust: 0.0
+user temperature_sensor_01
+# ACCESS REVOKED: Device is in DENY / quarantined state

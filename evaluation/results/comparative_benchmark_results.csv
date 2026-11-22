@@ -1,0 +1,5 @@
+model_id,model_name,precision,recall,f1_score,false_positive_rate,attack_detection_time_ms,unauth_access_success_pct,legit_access_success_pct,revocation_delay_ms,policy_decision_latency_ms,cpu_utilization_pct,memory_utilization_pct,policy_evaluations_count,congestion_resilience_score
+S1,Traditional Auth + Static ACL,0.5,0.22,0.305,0.02,3200.0,78.5,98.2,12500.0,0.2,4.1,22.0,50,0.95
+S2,Behaviour-Only (No Context),0.68,0.89,0.771,0.34,480.0,21.0,69.5,650.0,1.4,7.8,26.5,210,0.38
+S3,Zero Trust (Fixed Interval),0.82,0.84,0.83,0.16,1450.0,14.2,86.0,1800.0,1.9,6.2,28.0,120,0.62
+S4,Proposed Context-Aware Adaptive ZT,0.96,0.95,0.955,0.04,95.0,1.8,96.8,140.0,2.6,9.4,31.2,340,0.96
