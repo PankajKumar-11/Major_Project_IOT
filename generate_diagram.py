@@ -1,179 +1,337 @@
 """
-Generates a crystal-clear, intuitive, and highly readable academic workflow diagram.
-Clean professional styling with high contrast, large readable fonts,
-and clear linear flow designed for university presentation slides and thesis report.
+Generates a clean, readable, vertical academic flowchart diagram.
+One step per row, wide boxes, clear labels, big fonts.
+Run:  python generate_diagram.py
+Output: assets/workflow_diagram.png
 """
-import os
 from pathlib import Path
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyArrowPatch
 
 OUTPUT_DIR = Path("assets")
 OUTPUT_DIR.mkdir(exist_ok=True)
 OUTPUT_PATH = OUTPUT_DIR / "workflow_diagram.png"
 
-def generate_diagram():
-    # 16:9 canvas with crisp resolution
-    fig, ax = plt.subplots(figsize=(15, 8.5), dpi=300)
-    
-    # Clean professional slate/white background for maximum legibility in papers & slides
-    bg_color = "#F8FAFC"
-    fig.patch.set_facecolor(bg_color)
-    ax.set_facecolor(bg_color)
+# ── Canvas ────────────────────────────────────────────────────────────────────
+FIG_W, FIG_H = 14, 20
+fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=200)
+fig.patch.set_facecolor("white")
+ax.set_facecolor("white")
+ax.axis("off")
+ax.set_xlim(0, 14)
+ax.set_ylim(0, 20)
 
-    # Color Palette: Distinct, clean academic colors
-    c_slate_dark = "#0F172A"
-    c_blue = "#0284C7"
-    c_indigo = "#4F46E5"
-    c_emerald = "#059669"
-    c_amber = "#D97706"
-    c_rose = "#E11D48"
-    c_gray_border = "#CBD5E1"
-    c_box_bg = "#FFFFFF"
+# ── Design tokens ─────────────────────────────────────────────────────────────
+COLORS = {
+    "blue":    "#1565C0",
+    "red":     "#C62828",
+    "indigo":  "#283593",
+    "amber":   "#E65100",
+    "green":   "#2E7D32",
+    "purple":  "#6A1B9A",
+    "teal":    "#00695C",
+    "navy":    "#0D1B2A",
+    "arrow":   "#37474F",
+}
+LBOX = 1.2   # left x of box
+RBOX = 12.8  # right x
+BOX_W = RBOX - LBOX
+BOX_H = 1.55  # normal box height
+GAP   = 0.52  # gap between boxes
 
-    # Header Title
-    ax.text(7.5, 8.0, "How It Works: Step-by-Step Zero Trust Operational Workflow", 
-            fontsize=17, fontweight='bold', color=c_slate_dark, ha='center', va='center')
-    ax.text(7.5, 7.6, "A continuous loop that inspects device behavior, prevents false congestion alarms, and dynamically enforces permissions.", 
-            fontsize=10.5, color="#475569", ha='center', va='center')
+# ── Helper: rounded box + text ────────────────────────────────────────────────
+def draw_box(ax, x, y, w, h, bg, border, step_num, step_title, body_lines,
+             title_color=None):
+    """Draw a step box. y = bottom-left corner."""
+    tc = title_color or border
+    # Shadow
+    shadow = mpatches.FancyBboxPatch(
+        (x + 0.07, y - 0.07), w, h,
+        boxstyle="round,pad=0.08",
+        fc="#CCCCCC", ec="none", zorder=1)
+    ax.add_patch(shadow)
+    # Main box
+    box = mpatches.FancyBboxPatch(
+        (x, y), w, h,
+        boxstyle="round,pad=0.08",
+        fc=bg, ec=border, linewidth=2.2, zorder=2)
+    ax.add_patch(box)
+    # Step badge (left coloured circle)
+    badge_x = x + 0.42
+    badge_y = y + h / 2
+    circ = plt.Circle((badge_x, badge_y), 0.30,
+                       fc=border, ec="white", linewidth=1.5, zorder=3)
+    ax.add_patch(circ)
+    ax.text(badge_x, badge_y, str(step_num),
+            ha="center", va="center", fontsize=11,
+            fontweight="bold", color="white", zorder=4)
+    # Title
+    ax.text(x + 0.90, y + h * 0.72, step_title,
+            ha="left", va="center", fontsize=11.5,
+            fontweight="bold", color=tc, zorder=3)
+    # Body lines
+    if isinstance(body_lines, str):
+        body_lines = [body_lines]
+    line_y = y + h * 0.72 - 0.32
+    for line in body_lines:
+        ax.text(x + 0.90, line_y, line,
+                ha="left", va="top", fontsize=9.0,
+                color="#263238", zorder=3, linespacing=1.4)
+        line_y -= 0.265
 
-    # STEP 1: IoT Device Telemetry
-    s1 = patches.FancyBboxPatch((0.5, 4.6), 2.8, 2.4, boxstyle="round,pad=0.1", fc=c_box_bg, ec="#0284C7", lw=2)
-    ax.add_patch(s1)
-    ax.text(1.9, 6.7, "STEP 1: Device Message", fontsize=11, fontweight='bold', color="#0284C7", ha='center')
-    ax.text(1.9, 5.65, 
-            "IoT devices publish telemetry\nto MQTT topics.\n\n"
-            "Each message contains:\n"
-            "• Sensor data payload\n"
-            "• Incrementing Seq Number\n"
-            "• Fresh Random Nonce", 
-            fontsize=9, color="#334155", ha='center', va='center')
+def draw_arrow(ax, x1, y1, x2, y2, color="#37474F", label=""):
+    ax.annotate("",
+        xy=(x2, y2), xytext=(x1, y1),
+        arrowprops=dict(
+            arrowstyle="->,head_width=0.35,head_length=0.28",
+            color=color, lw=2.0),
+        zorder=5)
+    if label:
+        mx, my = (x1+x2)/2, (y1+y2)/2
+        ax.text(mx + 0.15, my, label,
+                ha="left", va="center",
+                fontsize=8, color=color, style="italic", zorder=5)
 
-    # STEP 2: Instant Gatekeeper
-    s2 = patches.FancyBboxPatch((3.8, 4.6), 3.0, 2.4, boxstyle="round,pad=0.1", fc=c_box_bg, ec="#E11D48", lw=2)
-    ax.add_patch(s2)
-    ax.text(5.3, 6.7, "STEP 2: Broker Gatekeeper", fontsize=11, fontweight='bold', color="#E11D48", ha='center')
-    ax.text(5.3, 5.65, 
-            "Is the device permitted to\npublish to this topic right now?\n\n"
-            "• If DENIED: Block & Alert!\n"
-            "• If Unauthorized topic: Drop!\n"
-            "• If ALLOWED: Route packet\n"
-            "  and pass to behavior engine.", 
-            fontsize=9, color="#334155", ha='center', va='center')
+def draw_diamond(ax, cx, cy, w, h, bg, border, text_lines):
+    """Draw a decision diamond."""
+    dx, dy = w/2, h/2
+    pts = [(cx, cy+dy), (cx+dx, cy), (cx, cy-dy), (cx-dx, cy)]
+    diamond = mpatches.Polygon(pts, closed=True,
+                               fc=bg, ec=border, linewidth=2.2, zorder=2)
+    ax.add_patch(diamond)
+    if isinstance(text_lines, str):
+        text_lines = [text_lines]
+    for i, t in enumerate(text_lines):
+        offset = (len(text_lines)-1) * 0.14 - i * 0.28
+        ax.text(cx, cy + offset, t,
+                ha="center", va="center",
+                fontsize=9.5, fontweight="bold",
+                color=border, zorder=3)
 
-    # STEP 3: Dual Analysis (Behavior & Network)
-    s3 = patches.FancyBboxPatch((7.3, 4.6), 3.4, 2.4, boxstyle="round,pad=0.1", fc=c_box_bg, ec="#4F46E5", lw=2)
-    ax.add_patch(s3)
-    ax.text(9.0, 6.7, "STEP 3: Dual Analysis", fontsize=11, fontweight='bold', color="#4F46E5", ha='center')
-    ax.text(9.0, 5.65, 
-            "The system checks two separate streams:\n\n"
-            "A. Device Behaviour (Sliding Window):\n"
-            "   Message rate, payload size variance,\n"
-            "   duplicate nonce / replay checks.\n\n"
-            "B. Fleet Network Health:\n"
-            "   Measures latency across ALL devices.", 
-            fontsize=8.5, color="#334155", ha='center', va='center')
+# ── TITLE ─────────────────────────────────────────────────────────────────────
+ax.text(7, 19.65,
+        "Behaviour-Aware Zero Trust Security — System Workflow",
+        ha="center", va="top", fontsize=14.5,
+        fontweight="bold", color=COLORS["navy"])
+ax.text(7, 19.28,
+        "End-to-end flow: from IoT device message → authentication → monitoring → "
+        "trust evaluation → policy decision → enforcement",
+        ha="center", va="top", fontsize=9.5, color="#546E7A", style="italic")
 
-    # STEP 4: Network Context Filter
-    s4 = patches.FancyBboxPatch((11.2, 4.6), 3.3, 2.4, boxstyle="round,pad=0.1", fc=c_box_bg, ec="#D97706", lw=2)
-    ax.add_patch(s4)
-    ax.text(12.85, 6.7, "STEP 4: Context Awareness", fontsize=11, fontweight='bold', color="#D97706", ha='center')
-    ax.text(12.85, 5.65, 
-            "Key Question: Is the network slow\nor is the device being malicious?\n\n"
-            "• If >= 60% of fleet experiences high\n"
-            "  latency: Flag Network Congestion!\n\n"
-            "• Discount rate/delay penalties by 70%\n"
-            "  to prevent false isolation of\n"
-            "  innocent devices.", 
-            fontsize=8.5, color="#334155", ha='center', va='center')
+# ── STEP DEFINITIONS ──────────────────────────────────────────────────────────
+# (step_num, title, body_lines, border_color, bg_color)
+steps = [
+    # y will be computed bottom-up; we lay them top→bottom
+    (1, "IoT Device Publishes Message",
+     ["Device sends MQTT message: payload + sequence number + nonce",
+      "Device ID must match a registered credential in the database"],
+     COLORS["blue"], "#E3F2FD"),
 
-    # STEP 5: Trust & Confidence Calculation
-    s5 = patches.FancyBboxPatch((11.2, 1.2), 3.3, 2.5, boxstyle="round,pad=0.1", fc=c_box_bg, ec="#059669", lw=2)
-    ax.add_patch(s5)
-    ax.text(12.85, 3.4, "STEP 5: Trust & Risk Score", fontsize=11, fontweight='bold', color="#059669", ha='center')
-    ax.text(12.85, 2.3, 
-            "1. Weighted Risk Score:\n"
-            "   Combines rate, unauth access,\n"
-            "   auth failures, & payload jitter.\n\n"
-            "2. Trust Score = 100 * (1 - Risk)\n\n"
-            "3. Historical Smoothing (alpha=0.70)\n\n"
-            "4. Immediate Security Overrides\n"
-            "   (critical violations drop trust to 0)", 
-            fontsize=8.5, color="#334155", ha='center', va='center')
+    (2, "Broker Gatekeeper — Real-time ACL Check",
+     ["Is this device currently ALLOWED or DENIED?",
+      "Is the topic in the device's permitted topic list?",
+      "If DENIED or wrong topic → block message immediately, log alert"],
+     COLORS["red"], "#FFEBEE"),
 
-    # STEP 6: 4 Policy Decisions (ALLOW / RESTRICT / CHALLENGE / DENY)
-    s6 = patches.FancyBboxPatch((3.8, 0.8), 6.9, 2.9, boxstyle="round,pad=0.1", fc="#FFFFFF", ec="#0F172A", lw=2.5)
-    ax.add_patch(s6)
-    ax.text(7.25, 3.4, "STEP 6: Dynamic Zero Trust Access Policy Decision", fontsize=11.5, fontweight='bold', color=c_slate_dark, ha='center')
+    (3, "Device Behaviour Monitor (Sliding Window)",
+     ["Collects features over last N seconds per device:",
+      "• Message rate  • Payload size variance  • Reconnection count",
+      "• Failed auth attempts  • Unauthorized topic access count",
+      "• Duplicate nonce / replay sequence detection"],
+     COLORS["indigo"], "#E8EAF6"),
 
-    # 4 Decision Cards inside Step 6
-    # Card 1: ALLOW
-    c1 = patches.FancyBboxPatch((4.0, 2.1), 3.1, 1.0, boxstyle="round,pad=0.05", fc="#ECFDF5", ec="#059669", lw=1.5)
-    ax.add_patch(c1)
-    ax.text(5.55, 2.8, "ALLOW (Trust >= 80)", fontsize=9, fontweight='bold', color="#059669", ha='center')
-    ax.text(5.55, 2.35, "Full access to allowed topics.\nRe-evaluate in 30 seconds.", fontsize=7.5, color="#065F46", ha='center')
+    (4, "Network Monitor — Fleet-wide Health Check",
+     ["Measures latency, packet loss, broker delay across ALL devices simultaneously",
+      "If ≥ 60% of devices show high latency → Network Congestion Flag raised",
+      "→ Rate and connection anomaly scores discounted by 30% (δ = 0.70)",
+      "Purpose: avoid falsely blaming honest devices for slow network"],
+     COLORS["amber"], "#FFF3E0"),
 
-    # Card 2: RESTRICT
-    c2 = patches.FancyBboxPatch((7.4, 2.1), 3.1, 1.0, boxstyle="round,pad=0.05", fc="#FFFBEB", ec="#D97706", lw=1.5)
-    ax.add_patch(c2)
-    ax.text(8.95, 2.8, "RESTRICT (Trust 50 - 79)", fontsize=9, fontweight='bold', color="#D97706", ha='center')
-    ax.text(8.95, 2.35, "Block sensitive commands / motors.\nRe-evaluate in 10 seconds.", fontsize=7.5, color="#92400E", ha='center')
+    (5, "Trust & Confidence Calculation",
+     ["Risk  =  0.30×Unauth_Topics + 0.25×Auth_Failures + 0.20×Rate_Anomaly",
+      "         + 0.15×Payload_Anomaly + 0.10×Conn_Anomaly",
+      "Trust_raw  =  100 × (1 − Risk)",
+      "Trust_t    =  0.70 × Trust_(t−1) + 0.30 × Trust_raw   [EWMA smoothing]",
+      "Confidence =  sample sufficiency + stability (CV) + indicator agreement",
+      "Override:  unauth ≥ 0.5 OR replay detected → Trust := 0  immediately"],
+     COLORS["green"], "#E8F5E9"),
+]
 
-    # Card 3: CHALLENGE
-    c3 = patches.FancyBboxPatch((4.0, 1.0), 3.1, 1.0, boxstyle="round,pad=0.05", fc="#EEF2FF", ec="#4F46E5", lw=1.5)
-    ax.add_patch(c3)
-    ax.text(5.55, 1.7, "CHALLENGE (Low Evidence)", fontsize=9, fontweight='bold', color="#4F46E5", ha='center')
-    ax.text(5.55, 1.25, "Confidence < 0.40. Issues crypto\nnonce challenge before isolating.", fontsize=7.5, color="#3730A3", ha='center')
+# Layout: start drawing from top (y=18.8), going down
+TOP_Y  = 18.80
+cur_y  = TOP_Y
+BOX_H2 = BOX_H  # may vary per step
 
-    # Card 4: DENY
-    c4 = patches.FancyBboxPatch((7.4, 1.0), 3.1, 1.0, boxstyle="round,pad=0.05", fc="#FFF1F2", ec="#E11D48", lw=1.5)
-    ax.add_patch(c4)
-    ax.text(8.95, 1.7, "DENY (Trust < 50 or Violation)", fontsize=9, fontweight='bold', color="#E11D48", ha='center')
-    ax.text(8.95, 1.25, "Access revoked! Quarantined.\nImmediate critical override.", fontsize=7.5, color="#9F1239", ha='center')
+step_bottoms = []   # track bottom y of each step box for arrows
 
-    # STEP 7: Enforcement & Loop Feedback
-    s7 = patches.FancyBboxPatch((0.5, 1.2), 2.8, 2.5, boxstyle="round,pad=0.1", fc=c_box_bg, ec="#0284C7", lw=2)
-    ax.add_patch(s7)
-    ax.text(1.9, 3.4, "STEP 7: Enforcement & Audit", fontsize=11, fontweight='bold', color="#0284C7", ha='center')
-    ax.text(1.9, 2.3, 
-            "1. Synchronizes Mosquitto ACL\n"
-            "   file and broker in real time.\n\n"
-            "2. Logs security event to SQLite.\n\n"
-            "3. Updates SOC Dashboard.\n\n"
-            "4. FEEDS BACK into Step 2\n"
-            "   for next incoming message!", 
-            fontsize=8.5, color="#334155", ha='center', va='center')
+for i, (num, title, body, border, bg) in enumerate(steps):
+    # Taller box for steps with more body lines
+    h = max(BOX_H, 0.28 * len(body) + 0.80)
+    bottom = cur_y - h
+    draw_box(ax, LBOX, bottom, BOX_W, h, bg, border, num, title, body)
+    step_bottoms.append((LBOX + BOX_W/2, bottom, bottom + h))  # cx, bottom, top
+    # Arrow from previous step
+    if i > 0:
+        px, pb, pt = step_bottoms[i-1]
+        cx, cb, ct = step_bottoms[i]
+        draw_arrow(ax, px, pb, cx, ct)
+    cur_y = bottom - GAP
 
-    # Connecting Arrows
-    arrow = dict(arrowstyle="->,head_width=0.4,head_length=0.45", lw=2, color="#0284C7")
-    
-    # 1 -> 2
-    ax.annotate("", xy=(3.8, 5.8), xytext=(3.3, 5.8), arrowprops=arrow)
-    # 2 -> 3
-    ax.annotate("", xy=(7.3, 5.8), xytext=(6.8, 5.8), arrowprops=arrow)
-    # 3 -> 4
-    ax.annotate("", xy=(11.2, 5.8), xytext=(10.7, 5.8), arrowprops=arrow)
-    # 4 -> 5 (Vertical down)
-    ax.annotate("", xy=(12.85, 3.7), xytext=(12.85, 4.6), arrowprops=arrow)
-    # 5 -> 6 (Horizontal left into Step 6)
-    ax.annotate("", xy=(10.7, 2.3), xytext=(11.2, 2.3), arrowprops=arrow)
-    # 6 -> 7 (Horizontal left into Step 7)
-    ax.annotate("", xy=(3.3, 2.3), xytext=(3.8, 2.3), arrowprops=arrow)
-    # 7 -> 2 (Feedback loop arrow: vertical up to Gatekeeper)
-    ax.annotate("", xy=(3.8, 5.3), xytext=(1.9, 3.7),
-                arrowprops=dict(arrowstyle="->,head_width=0.4,head_length=0.45", lw=2.2, color="#059669",
-                                connectionstyle="angle,angleA=90,angleB=180,rad=8"))
-    ax.text(2.6, 4.25, "FEEDBACK LOOP\n(Updates ACL Permissions)", 
-            fontsize=7.5, fontweight='bold', color="#059669", ha='center', va='center')
+# ── POLICY DECISION DIAMOND ───────────────────────────────────────────────────
+diamond_cx = 7.0
+diamond_top = cur_y
+diamond_cy  = cur_y - 1.05
+draw_arrow(ax, 7.0, step_bottoms[-1][1], 7.0, diamond_cy + 1.05)
 
-    ax.set_xlim(0, 15)
-    ax.set_ylim(0.4, 8.4)
-    ax.axis('off')
+draw_diamond(ax, diamond_cx, diamond_cy, 5.6, 2.1,
+             "#F3E5F5", COLORS["purple"],
+             ["STEP 6: Policy Decision", "What is the Trust Score?"])
+cur_y = diamond_cy - 1.1
 
-    plt.tight_layout()
-    plt.savefig(OUTPUT_PATH, dpi=300, bbox_inches='tight', facecolor=bg_color)
-    plt.close()
-    print(f"SUCCESS: Generated clear, intuitive workflow diagram at {OUTPUT_PATH}")
+# ── 4 OUTCOME BOXES side by side ──────────────────────────────────────────────
+outcome_y = cur_y - 2.15
+out_w = 2.65
+out_h = 2.00
+spacing = 0.22
+total_w = 4 * out_w + 3 * spacing
+start_x = (14 - total_w) / 2
 
-if __name__ == "__main__":
-    generate_diagram()
+outcomes = [
+    ("ALLOW",     "Trust ≥ 80\nConfidence ≥ 0.6",
+     "Full access to\nall permitted topics.\nRe-evaluate in 30 s.",
+     COLORS["green"], "#E8F5E9"),
+    ("RESTRICT",  "Trust 50–79",
+     "Block sensitive topics\n(e.g. motor commands).\nRe-evaluate in 10 s.",
+     COLORS["amber"], "#FFF3E0"),
+    ("CHALLENGE", "Confidence < 0.4",
+     "Issue crypto nonce\nchallenge. Wait for\ndevice to respond.",
+     COLORS["indigo"], "#E8EAF6"),
+    ("DENY",      "Trust < 50\nor Override",
+     "Revoke all access.\nQuarantine device.\nRe-evaluate in 2 s.",
+     COLORS["red"], "#FFEBEE"),
+]
+
+out_centers = []
+for j, (label, cond, action, border, bg) in enumerate(outcomes):
+    bx = start_x + j * (out_w + spacing)
+    by = outcome_y
+    # Shadow
+    shadow = mpatches.FancyBboxPatch(
+        (bx+0.06, by-0.06), out_w, out_h,
+        boxstyle="round,pad=0.08", fc="#CCCCCC", ec="none", zorder=1)
+    ax.add_patch(shadow)
+    # Box
+    box = mpatches.FancyBboxPatch(
+        (bx, by), out_w, out_h,
+        boxstyle="round,pad=0.08",
+        fc=bg, ec=border, linewidth=2.2, zorder=2)
+    ax.add_patch(box)
+    # Header stripe
+    stripe = mpatches.FancyBboxPatch(
+        (bx, by + out_h - 0.52), out_w, 0.52,
+        boxstyle="round,pad=0.0",
+        fc=border, ec="none", zorder=3)
+    ax.add_patch(stripe)
+    ax.text(bx + out_w/2, by + out_h - 0.26, label,
+            ha="center", va="center", fontsize=10.5,
+            fontweight="bold", color="white", zorder=4)
+    ax.text(bx + out_w/2, by + out_h - 0.70, cond,
+            ha="center", va="top", fontsize=8.0,
+            fontweight="bold", color=border, zorder=3)
+    ax.text(bx + out_w/2, by + 0.65, action,
+            ha="center", va="center", fontsize=8.2,
+            color="#263238", zorder=3, linespacing=1.5)
+    cx_out = bx + out_w/2
+    out_centers.append(cx_out)
+    # Arrow from diamond
+    draw_arrow(ax, diamond_cx, diamond_cy - 1.05,
+               cx_out, by + out_h,
+               color=border)
+    # Label on arrow
+    lbls = ["ALLOW", "RESTRICT", "CHALLENGE", "DENY"]
+    ax.text(cx_out, by + out_h + 0.14, lbls[j],
+            ha="center", va="bottom", fontsize=7.5,
+            color=border, fontweight="bold")
+
+# ── STEP 7: Enforcement box ───────────────────────────────────────────────────
+enf_y = outcome_y - 0.55 - BOX_H - 0.2
+enf_h = 1.42
+draw_box(ax, LBOX, enf_y, BOX_W, enf_h,
+         "#E3F2FD", COLORS["teal"], 7,
+         "Enforcement & Audit Trail",
+         ["Update Mosquitto ACL file → permissions take effect for NEXT message immediately",
+          "Log security event to SQLite database  •  Push update to SOC Dashboard",
+          "Trigger next trust re-evaluation at adaptive interval (2 s / 10 s / 30 s)"],
+         title_color=COLORS["teal"])
+
+enf_cx = LBOX + BOX_W/2
+enf_top = enf_y + enf_h
+# Arrows from all outcome boxes down to enforcement
+for cx_out in out_centers:
+    ax.annotate("",
+        xy=(enf_cx, enf_top),
+        xytext=(cx_out, outcome_y),
+        arrowprops=dict(
+            arrowstyle="->,head_width=0.25,head_length=0.22",
+            color=COLORS["teal"], lw=1.4,
+            connectionstyle="arc3,rad=0.0"),
+        zorder=5)
+
+# ── FEEDBACK LOOP arrow ───────────────────────────────────────────────────────
+# From Step 7 (enforcement) back up to Step 2 (Broker Gatekeeper)
+broker_top = step_bottoms[1][2]   # top y of step 2
+broker_cx  = step_bottoms[1][0]
+
+ax.annotate("",
+    xy=(LBOX - 0.35, broker_top - 0.4),
+    xytext=(LBOX - 0.35, enf_y + enf_h * 0.5),
+    arrowprops=dict(
+        arrowstyle="->,head_width=0.35,head_length=0.28",
+        color=COLORS["green"], lw=2.2,
+        connectionstyle="arc3,rad=0.0"),
+    zorder=5)
+# Horizontal stub to box
+ax.plot([LBOX - 0.35, LBOX], [broker_top - 0.40, broker_top - 0.40],
+        color=COLORS["green"], lw=2.2, zorder=5)
+# Left side vertical line
+ax.plot([LBOX - 0.35, LBOX - 0.35], [enf_y + enf_h*0.5, broker_top - 0.40],
+        color=COLORS["green"], lw=2.2, zorder=5)
+# Stub from enforcement
+ax.plot([LBOX - 0.35, LBOX], [enf_y + enf_h*0.5, enf_y + enf_h*0.5],
+        color=COLORS["green"], lw=2.2, zorder=5)
+ax.text(LBOX - 0.42, (broker_top + enf_y + enf_h*0.5)/2,
+        "FEEDBACK\nLOOP",
+        ha="right", va="center", fontsize=8.5,
+        fontweight="bold", color=COLORS["green"],
+        rotation=90)
+
+# ── LEGEND ────────────────────────────────────────────────────────────────────
+legend_y = enf_y - 0.65
+legend_items = [
+    (COLORS["blue"],   "Device / MQTT Layer"),
+    (COLORS["indigo"], "Behaviour Analysis"),
+    (COLORS["amber"],  "Network Context Awareness"),
+    (COLORS["green"],  "Trust Engine / Enforcement"),
+    (COLORS["purple"], "Policy Decision"),
+    (COLORS["red"],    "Security Violation / DENY"),
+]
+ax.text(7, legend_y + 0.02, "Legend", ha="center", va="bottom",
+        fontsize=9, color="#37474F", fontweight="bold")
+lx = 0.9
+for color, label in legend_items:
+    circ = plt.Circle((lx + 0.18, legend_y - 0.22), 0.14,
+                      fc=color, ec="white", linewidth=1, zorder=5)
+    ax.add_patch(circ)
+    ax.text(lx + 0.42, legend_y - 0.22, label,
+            ha="left", va="center", fontsize=8, color="#263238")
+    lx += 2.15
+
+# ── SAVE ──────────────────────────────────────────────────────────────────────
+plt.tight_layout(pad=0.3)
+plt.savefig(str(OUTPUT_PATH), dpi=200, bbox_inches="tight",
+            facecolor="white", edgecolor="none")
+plt.close()
+print(f"SUCCESS: Diagram saved → {OUTPUT_PATH}")
