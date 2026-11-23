@@ -62,9 +62,9 @@ ax.add_patch(s1_stripe)
 ax.text(X_LEFT + 0.25, s1_y + s1_h - 0.18, "STAGE 1: IoT Device Telemetry & Protocol Gatekeeper", ha="left", va="center", fontsize=8.8, fontweight="bold", color="white", zorder=4)
 
 ax.text(X_LEFT + 0.35, s1_y + s1_h - 0.48, 
-        "• IoT Sensor Fleet (Sensors, Actuators, Cameras) publishes MQTT telemetry\n"
+        "• IoT Sensor Fleet: temperature_sensor_01, humidity_02, energy_03, motor_04, camera_05\n"
         "• Each message carries: Client ID + Sensor Payload + Monotonic Seq# + Cryptographic Nonce", 
-        ha="left", va="top", fontsize=7.6, color=TEXT_DARK, zorder=4, linespacing=1.4)
+        ha="left", va="top", fontsize=7.5, color=TEXT_DARK, zorder=4, linespacing=1.4)
 
 ax.text(X_LEFT + 6.3, s1_y + s1_h - 0.48, 
         "• Protocol Verification: Verifies HMAC token & checks nonce freshness against replay attacks\n"
@@ -222,14 +222,14 @@ draw_stage4_card(X_LEFT + 0.16, s4_y + 0.12, cw4, card4_h,
                  "ALLOW (Trust >= 80, C >= 0.6)",
                  ["• Full access to registered topics",
                   "• Normal publish & subscribe",
-                  "• Reassessment window: 30s"],
+                  "• Reassessment window: 60s"],
                  GREEN)
 
 draw_stage4_card(X_LEFT + 2.82, s4_y + 0.12, cw4, card4_h,
                  "RESTRICT (50 <= Trust < 80)",
                  ["• Actuator control topics revoked",
                   "• Telemetry throttled / read-only",
-                  "• Reassessment window: 10s"],
+                  "• Reassessment window: 15s"],
                  AMBER)
 
 draw_stage4_card(X_LEFT + 5.48, s4_y + 0.12, cw4, card4_h,

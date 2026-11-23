@@ -118,11 +118,14 @@ def build_pdf():
     )
 
     scope_text = (
-        "<b>Architectural Scope:</b> Focused on edge and gateway-level IoT systems utilizing the MQTT v3.1.1/v5.0 protocol, "
-        "employing Eclipse Mosquitto as the Policy Enforcement Point (PEP) and a co-located analytical engine as the Policy Decision Point (PDP).<br/>"
-        "<b>Threat Model:</b> Explicitly addresses authenticated insider adversaries, hijacked sensor nodes publishing to unauthorized topics, "
-        "cryptographic message replay attempts, and low-and-slow volumetric flooding. A critical design requirement is preventing false positive "
-        "isolations: distinguishing between legitimate nodes suffering transient network congestion versus compromised nodes executing deliberate attacks."
+        "<b>Architectural Scope & Device Fleet:</b> Focused on edge and gateway-level IoT systems utilizing the MQTT v3.1.1/v5.0 protocol, "
+        "employing Eclipse Mosquitto as the Policy Enforcement Point (PEP) and a co-located analytical engine as the Policy Decision Point (PDP). "
+        "Evaluated on 5 virtual devices with explicit topic namespaces: <code>temperature_sensor_01</code>, <code>humidity_02</code>, "
+        "<code>energy_03</code>, <code>motor_controller_04</code> (status/commands), and <code>smart_camera_05</code> (stream/events).<br/>"
+        "<b>Threat Model & Enforcement Rules:</b> Explicitly addresses authenticated insider adversaries, hijacked sensor nodes publishing to unauthorized topics "
+        "(e.g., temperature sensor attempting to send motor control commands), cryptographic replay attempts, and low-and-slow flooding. "
+        "A critical design requirement is preventing false positive isolations: distinguishing between legitimate nodes suffering transient network congestion "
+        "versus compromised nodes executing deliberate attacks."
     )
 
     def text_box(title, body, border_color, bg_color):
@@ -381,13 +384,13 @@ def build_pdf():
         [p("<b>ALLOW</b>", S("ma", fontSize=6.6, fontName="Helvetica-Bold", textColor=GREEN)),
          p("Trust ≥ 80 (Risk ≤ 0.20)", S("mc", fontSize=6.5, alignment=TA_CENTER)),
          p("C ≥ 0.60", S("mc", fontSize=6.5, alignment=TA_CENTER)),
-         p("30 seconds", S("mc", fontSize=6.5, alignment=TA_CENTER)),
+         p("60 seconds", S("mc", fontSize=6.5, alignment=TA_CENTER)),
          p("Full access to all registered topics. Normal publishing permitted without throttling.", P_LEFT)],
 
         [p("<b>RESTRICT</b>", S("mr", fontSize=6.6, fontName="Helvetica-Bold", textColor=AMBER)),
          p("50 ≤ Trust < 80", S("mc", fontSize=6.5, alignment=TA_CENTER)),
          p("Any", S("mc", fontSize=6.5, alignment=TA_CENTER)),
-         p("10 seconds", S("mc", fontSize=6.5, alignment=TA_CENTER)),
+         p("15 seconds", S("mc", fontSize=6.5, alignment=TA_CENTER)),
          p("Prune sensitive topics: actuator commands and administrative channels revoked. Telemetry publishing throttled.", P_LEFT)],
 
         [p("<b>CHALLENGE</b>", S("mc_a", fontSize=6.6, fontName="Helvetica-Bold", textColor=BLUE)),
@@ -428,11 +431,11 @@ def build_pdf():
     story.append(sp(1.8))
 
     ref_text = (
-        "<b>Prototype Testing & Scenario Coverage:</b> The framework is benchmarked across 8 automated threat scenarios: "
-        "(1) Normal Baseline, (2) MQTT Flooding, (3) Compromised Authenticated Device, (4) Unauthorized Topic Access, "
-        "(5) Authentication Brute-Force, (6) Replay Attack, (7) Benign Network Congestion, and (8) Low-and-Slow Attack. "
-        "Controlled evaluations demonstrate rapid detection time (< 2.2s for flooding, < 4.7s for compromised internal nodes) while "
-        "holding False Positive Rates under 4% during heavy simulated congestion (reducing FPR by >85% compared to static thresholding).<br/>"
+        "<b>Prototype Testing & Scenario Coverage:</b> Benchmarked across 8 automated threat scenarios: "
+        "(1) Normal Baseline, (2) MQTT Flooding, (3) Compromised Authenticated Device (valid credentials), (4) Unauthorized Topic Access, "
+        "(5) Authentication Brute-Force, (6) Replay Attack (nonce check), (7) Benign Network Congestion (nodes not isolated), and (8) Low-and-Slow Attack. "
+        "Every trust adjustment logs human-readable explainability justifications to the SQLite audit trail and Streamlit SOC dashboard. "
+        "Controlled evaluations demonstrate rapid detection (<2.2s for flooding, <4.7s for compromised nodes) while holding False Positive Rates under 4% during heavy congestion.<br/>"
         "<b>Key Literature References:</b> "
         "[1] NIST SP 800-207, <i>Zero Trust Architecture</i>, 2020. "
         "[2] N. F. Syed et al., 'Zero Trust Architecture (ZTA): A Comprehensive Survey,' <i>IEEE Access</i>, 2022. "
