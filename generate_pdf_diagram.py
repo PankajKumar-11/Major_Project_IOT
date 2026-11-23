@@ -1,6 +1,6 @@
 """
-Generates a SIMPLE, CLEAN pipeline diagram optimised for PDF embedding.
-Wide aspect ratio, minimal text, large fonts — readable even at 6 cm height.
+Generates a crisp, ultra-clean pipeline diagram optimized for the single-page PDF.
+No lines overlapping text. Clear orthogonal feedback loop underneath.
 Output: assets/pdf_workflow.png
 """
 from pathlib import Path
@@ -12,133 +12,112 @@ import matplotlib.patches as mpatches
 OUTPUT = Path("assets/pdf_workflow.png")
 Path("assets").mkdir(exist_ok=True)
 
-# ── Canvas: very wide, short ──────────────────────────────────────────────────
-fig, ax = plt.subplots(figsize=(18, 5.5), dpi=220)
+# 18 x 5 aspect ratio canvas
+fig, ax = plt.subplots(figsize=(18, 4.8), dpi=220)
 fig.patch.set_facecolor("white")
 ax.set_facecolor("white")
 ax.axis("off")
 ax.set_xlim(0, 18)
-ax.set_ylim(0, 5.5)
+ax.set_ylim(0, 4.8)
 
-# ── Title row ─────────────────────────────────────────────────────────────────
-ax.text(9, 5.25,
-        "Zero Trust IoT — End-to-End System Workflow",
-        ha="center", va="center", fontsize=14, fontweight="bold",
-        color="#0D1B2A")
+# Title
+ax.text(9, 4.5, "Zero Trust IoT Architecture — Operational Flow Pipeline", 
+        ha="center", va="center", fontsize=13, fontweight="bold", color="#0D1B2A")
 
-# ── Step definitions ──────────────────────────────────────────────────────────
-# (label_top, label_bottom, border, fill)
+# Steps definition
 steps = [
-    ("①  Device",         "MQTT publish\n+ nonce + seq#",           "#1565C0", "#BBDEFB"),
-    ("②  Auth Check",     "Credential verify\n+ ACL gate",          "#C62828", "#FFCDD2"),
-    ("③  Behaviour\n     Monitor", "Rate · Payload\nReplay detect",  "#283593", "#C5CAE9"),
-    ("④  Network\n     Context",   "Fleet latency\nCongestion flag", "#E65100", "#FFE0B2"),
-    ("⑤  Trust Engine",   "Risk score\nEWMA smooth",                "#2E7D32", "#C8E6C9"),
-    ("⑥  Policy\n     Decision",   "ALLOW / RESTRICT\nCHALLENGE / DENY", "#6A1B9A", "#E1BEE7"),
-    ("⑦  Enforce\n     & Audit",   "Update ACL\nLog + Dashboard",   "#00695C", "#B2DFDB"),
+    ("Step 1: Ingestion",  "MQTT Publish\nSensor Telemetry\nFresh Nonce",       "#1565C0", "#E3F2FD"),
+    ("Step 2: Gatekeeper", "Broker ACL Gate\nIdentity Check\nPre-Auth Filter",  "#C62828", "#FFEBEE"),
+    ("Step 3: Behaviour",  "Sliding Window\nRate & Payload Jitter\nReplay Detect", "#283593", "#E8EAF6"),
+    ("Step 4: Net Context","Fleet Correlation\nCongestion Filter\n[Novel: FPR Drop]", "#E65100", "#FFF3E0"),
+    ("Step 5: Trust Eng.", "Weighted Risk Model\nEWMA Smoothing\nOverride Rules", "#2E7D32", "#E8F5E9"),
+    ("Step 6: ZT Policy",  "ALLOW / RESTRICT\nCHALLENGE / DENY\nAdaptive Interval", "#6A1B9A", "#F3E5F5"),
+    ("Step 7: Enforce",    "Dynamic ACL Sync\nBroker Enforcement\nAudit Trail Logging", "#00695C", "#E0F2F1"),
 ]
 
 N = len(steps)
-BOX_W = 2.10
-BOX_H = 2.80
-GAP   = 0.08
-START_X = (18 - N * BOX_W - (N - 1) * GAP) / 2
-BOX_Y = 1.10   # bottom of boxes
+BOX_W = 2.15
+BOX_H = 2.40
+GAP = 0.18
+TOTAL_W = N * BOX_W + (N - 1) * GAP
+START_X = (18 - TOTAL_W) / 2
+BOX_Y = 1.35  # elevated to give plenty of clean space underneath for feedback loop
 
 box_centers = []
 
-for i, (top_lbl, bot_lbl, border, fill) in enumerate(steps):
+for i, (title, desc, border_col, bg_col) in enumerate(steps):
     bx = START_X + i * (BOX_W + GAP)
     cx = bx + BOX_W / 2
     box_centers.append(cx)
 
     # Shadow
     shadow = mpatches.FancyBboxPatch(
-        (bx + 0.05, BOX_Y - 0.05), BOX_W, BOX_H,
-        boxstyle="round,pad=0.10",
-        fc="#BBBBBB", ec="none", zorder=1)
+        (bx + 0.04, BOX_Y - 0.04), BOX_W, BOX_H,
+        boxstyle="round,pad=0.06",
+        fc="#D0D7DE", ec="none", zorder=1)
     ax.add_patch(shadow)
 
-    # Main box
+    # Box
     box = mpatches.FancyBboxPatch(
         (bx, BOX_Y), BOX_W, BOX_H,
-        boxstyle="round,pad=0.10",
-        fc=fill, ec=border, linewidth=2.5, zorder=2)
+        boxstyle="round,pad=0.06",
+        fc=bg_col, ec=border_col, linewidth=2.0, zorder=2)
     ax.add_patch(box)
 
-    # Coloured top stripe
+    # Header banner
+    stripe_h = 0.55
     stripe = mpatches.FancyBboxPatch(
-        (bx, BOX_Y + BOX_H - 0.78), BOX_W, 0.78,
+        (bx, BOX_Y + BOX_H - stripe_h), BOX_W, stripe_h,
         boxstyle="round,pad=0.0",
-        fc=border, ec="none", zorder=3)
+        fc=border_col, ec="none", zorder=3)
     ax.add_patch(stripe)
 
-    # Step label (top stripe)
-    ax.text(cx, BOX_Y + BOX_H - 0.39, top_lbl,
-            ha="center", va="center",
-            fontsize=9.5, fontweight="bold", color="white", zorder=4)
+    # Header text
+    ax.text(cx, BOX_Y + BOX_H - stripe_h/2, title,
+            ha="center", va="center", fontsize=8.5, fontweight="bold",
+            color="white", zorder=4)
 
     # Body text
-    ax.text(cx, BOX_Y + (BOX_H - 0.78) / 2 + 0.05, bot_lbl,
-            ha="center", va="center",
-            fontsize=9.0, color="#1A237E", zorder=3,
-            linespacing=1.5)
+    ax.text(cx, BOX_Y + (BOX_H - stripe_h)/2 + 0.02, desc,
+            ha="center", va="center", fontsize=7.8, color="#1E293B",
+            zorder=4, linespacing=1.35)
 
-# ── Arrows between boxes ──────────────────────────────────────────────────────
+# Forward arrows between boxes
 arrow_y = BOX_Y + BOX_H / 2
 for i in range(N - 1):
-    x1 = START_X + i * (BOX_W + GAP) + BOX_W + 0.02
-    x2 = START_X + (i + 1) * (BOX_W + GAP) - 0.02
+    x1 = START_X + i * (BOX_W + GAP) + BOX_W
+    x2 = START_X + (i + 1) * (BOX_W + GAP)
     ax.annotate("",
-        xy=(x2, arrow_y), xytext=(x1, arrow_y),
+        xy=(x2 - 0.02, arrow_y), xytext=(x1 + 0.02, arrow_y),
         arrowprops=dict(
-            arrowstyle="->,head_width=0.30,head_length=0.22",
-            color="#37474F", lw=2.0),
+            arrowstyle="->,head_width=0.25,head_length=0.22",
+            color="#334155", lw=1.8),
         zorder=5)
 
-# ── Feedback loop arc (⑦ → ②) ────────────────────────────────────────────────
-loop_y = BOX_Y - 0.42
-x_start = box_centers[6]   # Step 7
-x_end   = box_centers[1]   # Step 2
+# ── Clean Feedback Loop UNDERNEATH the boxes (No overlap!) ────────────────────
+# Orthogonal path: Step 7 bottom -> down -> left -> up to Step 2 bottom
+x_from = box_centers[6]
+x_to   = box_centers[1]
+y_bottom = BOX_Y
+y_track  = 0.45
 
+# Draw clean orthogonal path
+ax.plot([x_from, x_from], [y_bottom, y_track], color="#059669", lw=1.8, zorder=5)
+ax.plot([x_from, x_to],   [y_track, y_track], color="#059669", lw=1.8, zorder=5)
 ax.annotate("",
-    xy=(x_end, BOX_Y),
-    xytext=(x_start, BOX_Y),
+    xy=(x_to, y_bottom), xytext=(x_to, y_track),
     arrowprops=dict(
-        arrowstyle="->,head_width=0.28,head_length=0.22",
-        color="#2E7D32", lw=2.0,
-        connectionstyle=f"arc3,rad=0.38"),
+        arrowstyle="->,head_width=0.25,head_length=0.22",
+        color="#059669", lw=1.8),
     zorder=5)
 
-# Feedback label
-mx = (x_start + x_end) / 2
-ax.text(mx, loop_y - 0.08,
-        "⟲  Adaptive Feedback Loop  —  ACL permissions updated for every next message",
-        ha="center", va="top", fontsize=8.5,
-        color="#2E7D32", fontweight="bold", style="italic")
-
-# ── Legend row ────────────────────────────────────────────────────────────────
-legend = [
-    ("#1565C0", "Device / MQTT"),
-    ("#C62828", "Security Gate"),
-    ("#283593", "Behaviour Analysis"),
-    ("#E65100", "Network Context ★ Novel"),
-    ("#2E7D32", "Trust Engine"),
-    ("#6A1B9A", "ZT Policy"),
-    ("#00695C", "Enforcement"),
-]
-lx = 0.4
-ly = 0.46
-for color, label in legend:
-    circ = plt.Circle((lx + 0.14, ly), 0.12,
-                       fc=color, ec="white", linewidth=1, zorder=5)
-    ax.add_patch(circ)
-    ax.text(lx + 0.34, ly, label,
-            ha="left", va="center", fontsize=8.0, color="#263238")
-    lx += 2.44
+# Label on the feedback line
+ax.text((x_from + x_to)/2, y_track + 0.16,
+        "⟲ Continuous Feedback Loop: Real-time ACL Permission Updates Enforced on Broker",
+        ha="center", va="bottom", fontsize=8.2, fontweight="bold",
+        color="#047857", style="italic", zorder=6)
 
 plt.tight_layout(pad=0.2)
-plt.savefig(str(OUTPUT), dpi=220, bbox_inches="tight",
-            facecolor="white", edgecolor="none")
+plt.savefig(str(OUTPUT), dpi=220, bbox_inches="tight", facecolor="white")
 plt.close()
-print(f"SUCCESS → {OUTPUT}")
+print(f"SUCCESS: Generated clean pipeline diagram at {OUTPUT}")
