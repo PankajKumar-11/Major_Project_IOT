@@ -207,12 +207,12 @@ def build_pdf():
     story.append(sp(2.0))
 
     if DIAG.exists():
-        # Diagram aspect ratio 16 : 7.6 -> Height = INNER * (7.6 / 16) ≈ 260 pt
-        diag_h = 5.2 * cm # ~147 pt
+        # Diagram aspect ratio 13 : 9.2 -> Height = INNER * (9.2 / 13) ≈ 387 pt (~13.6 cm)
+        diag_h = INNER * (9.2 / 13.0)
         story.append(Image(str(DIAG), width=INNER, height=diag_h))
-        story.append(sp(1.5))
+        story.append(sp(2.0))
         story.append(p(
-            "<b>Figure 1: Closed-Loop Zero Trust IoT Architecture.</b> Telemetry streams through initial protocol checks into parallel monitoring streams. "
+            "<b>Figure 1: Vertical Operational Architecture & Pipeline.</b> Ingestion feeds parallel monitoring streams. "
             "Device behavioural metrics are contextually filtered against fleet network health. Trust and confidence engines feed a 4-tier policy state machine, "
             "which dynamically enforces topic ACL permissions directly within the Eclipse Mosquitto broker.",
             P_CAP
