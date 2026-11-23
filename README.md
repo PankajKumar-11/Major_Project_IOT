@@ -80,42 +80,48 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    START([IoT Device Packet Ingestion]) --> STEP1[Extract Headers: Timestamp, Seq, Nonce, Topic, Payload]
-    
-    STEP1 --> GATE1{Current Access Policy == DENY or Topic Unauthorized?}
-    GATE1 -- Yes --> DROP[Block Message at Broker & Log Security Alert]
-    DROP --> OVERRIDE[Trigger Critical Security Override: Trust -> 0, Policy -> DENY]
-    OVERRIDE --> SYNC_ACL[Synchronize Mosquitto Dynamic ACL & DB]
-    
-    GATE1 -- No --> DELIVER[Broker Routes Message to Authorized Subscribers]
-    DELIVER --> REC_BEHAV[Behavior Monitor: Sliding Window Metrics & Replay Nonce Check]
-    DELIVER --> REC_NET[Network Monitor: Fleet-Wide Latency Ping Sampling]
-    
-    REC_BEHAV & REC_NET --> EVAL_COND{Assessment Interval Due?}
-    EVAL_COND -- No --> SLEEP([Await Next Message])
-    
-    EVAL_COND -- Yes --> CHECK_CONGESTION{Fleet Congestion Detected?<br/>Latency >= 120ms across >= 60% devices}
-    CHECK_CONGESTION -- Yes --> DISCOUNT[Apply Context Discount: 70% Reduction on Rate/Latency Penalty]
-    CHECK_CONGESTION -- No --> NODISCOUNT[Zero Discount: Full Raw Penalties Applied]
-    
-    DISCOUNT & NODISCOUNT --> CALC_CONF[Confidence Engine: Evaluate Evidence Quantity & Metric Stability]
-    CALC_CONF --> CALC_RISK[Trust Engine: 5-Factor Weighted Risk Score Calculation]
-    CALC_RISK --> SMOOTH[Exponential Trust Smoothing: Trust = 0.70*Prev + 0.30*Raw]
-    
-    SMOOTH --> POLICY_BRANCH{Zero Trust Policy Engine Evaluation}
-    
-    POLICY_BRANCH -- "Trust >= 80 & Conf >= 0.60" --> DEC_ALLOW["Decision: ALLOW<br/>Full Topic Access<br/>Next Interval: 30s"]
-    POLICY_BRANCH -- "50 <= Trust < 80" --> DEC_RESTRICT["Decision: RESTRICT<br/>Filter Sensitive Actuators<br/>Next Interval: 10s"]
-    POLICY_BRANCH -- "Trust >= 50 & Conf < 0.40" --> DEC_CHALLENGE["Decision: CHALLENGE<br/>Issue Fresh Cryptographic Nonce"]
-    POLICY_BRANCH -- "Trust < 50 or Hard Violation" --> DEC_DENY["Decision: DENY<br/>Quarantine Device & Revoke Topics<br/>Next Interval: 2s"]
-    
-    DEC_CHALLENGE --> VERIFY_NONCE{Nonce HMAC Verified?}
-    VERIFY_NONCE -- Yes --> DEC_ALLOW
-    VERIFY_NONCE -- No --> DEC_DENY
-    
-    DEC_ALLOW & DEC_RESTRICT & DEC_DENY --> SYNC_ACL
-    SYNC_ACL --> AUDIT[Record Audit Event in SQLite & Refresh Streamlit SOC Dashboard]
-    AUDIT --> LOOP([Feedback Loop to Next Broker Ingestion Cycle])
+    %% Styling
+    classDef step fill:#FFFFFF,stroke:#0284C7,stroke-width:2px,color:#0F172A
+    classDef gate fill:#FFFBEB,stroke:#D97706,stroke-width:2px,color:#0F172A
+    classDef allow fill:#ECFDF5,stroke:#059669,stroke-width:2px,color:#065F46
+    classDef restrict fill:#FFFBEB,stroke:#D97706,stroke-width:2px,color:#92400E
+    classDef challenge fill:#EEF2FF,stroke:#4F46E5,stroke-width:2px,color:#3730A3
+    classDef deny fill:#FFF1F2,stroke:#E11D48,stroke-width:2px,color:#9F1239
+
+    subgraph Phase 1: Device Message Arrival
+        S1["<b>1. IoT Device Message</b><br/>Device sends telemetry with Timestamp, Sequence Number, and Nonce"]:::step
+        S2{"<b>2. Broker Gatekeeper Check</b><br/>Is device allowed to publish to this topic right now?"}:::gate
+        S1 --> S2
+    end
+
+    subgraph Phase 2: Dual Analysis
+        S2 -- "No (Unauthorized Topic or Quarantined)" --> D_BLOCK["<b>Immediate Block</b><br/>Packet dropped at broker & alert logged"]:::deny
+        S2 -- "Yes (Allowed Topic)" --> S3["<b>Deliver to Subscribers</b>"]:::step
+        S3 --> M_BEHAV["<b>A. Device Behaviour Monitor</b><br/>Tracks Rate (Hz), Payload Size, Replay Nonces"]:::step
+        S3 --> M_NET["<b>B. Fleet Network Monitor</b><br/>Tracks Latency across all devices"]:::step
+    end
+
+    subgraph Phase 3: Smart Context Awareness
+        M_BEHAV & M_NET --> C_CHECK{"<b>3. Network Congestion Check</b><br/>Is latency high across 60%+ of devices?"}:::gate
+        C_CHECK -- "Yes (Benign Congestion)" --> C_DISCOUNT["<b>Apply 70% Discount</b><br/>Do not penalize device trust for network lag!"]:::allow
+        C_CHECK -- "No (Normal Network)" --> C_RAW["<b>Standard Evaluation</b><br/>Full raw anomaly penalties applied"]:::step
+    end
+
+    subgraph Phase 4: Trust Calculation & Policy Decisions
+        C_DISCOUNT & C_RAW --> T_CALC["<b>4. Calculate Trust Score (0-100)</b><br/>Weighted Risk ➔ Trust = 100 × (1 - Risk)<br/>Historical Smoothing = 0.70 × Prev + 0.30 × New"]:::step
+        T_CALC --> P_DECIDE{"<b>5. Dynamic Policy Decision</b>"}:::gate
+
+        P_DECIDE -- "Trust ≥ 80" --> P_ALLOW["<b>ALLOW</b><br/>Full topic access granted<br/>Re-evaluate in 30s"]:::allow
+        P_DECIDE -- "50 ≤ Trust < 80" --> P_RESTRICT["<b>RESTRICT</b><br/>Block sensitive motor/control topics<br/>Re-evaluate in 10s"]:::restrict
+        P_DECIDE -- "Low Evidence" --> P_CHALLENGE["<b>CHALLENGE</b><br/>Verify crypto nonce before isolating"]:::challenge
+        P_DECIDE -- "Trust < 50 or Attack" --> P_DENY["<b>DENY</b><br/>Revoke permissions / Quarantine<br/>Re-evaluate in 2s"]:::deny
+    end
+
+    subgraph Phase 5: Dynamic Enforcement & Feedback Loop
+        P_ALLOW & P_RESTRICT & P_CHALLENGE & P_DENY --> SYNC["<b>6. Update Mosquitto ACL & SQLite</b><br/>Enforce permissions at broker in real time"]:::step
+        D_BLOCK --> SYNC
+        SYNC -.->|<b>Closed Feedback Loop</b>: Enforced on Next Message| S2
+    end
 ```
 
 ---
