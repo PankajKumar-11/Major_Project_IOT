@@ -12,7 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether, HRFlowable, Image
 )
 from reportlab.pdfgen import canvas
 
@@ -231,6 +231,26 @@ def build_pdf():
         ('TOPPADDING', (0, 0), (-1, -1), 3),
     ]))
     story.append(t_wf)
+
+    story.append(PageBreak())
+
+    # ==========================================
+    # 2.1 VISUAL WORKFLOW ARCHITECTURE DIAGRAM
+    # ==========================================
+    story.append(Paragraph("2.1 Visual End-to-End Operational Workflow Architecture", h1_style))
+    story.append(Paragraph("The visual schematic below details the closed-loop operational pipeline from device telemetry ingestion to real-time broker enforcement and dynamic ACL adaptation:", body_style))
+    story.append(Spacer(1, 4))
+
+    diagram_path = Path("assets/workflow_diagram.png")
+    if diagram_path.exists():
+        story.append(Image(str(diagram_path), width=524, height=299))
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(
+            "<b>Figure 1: Closed-Loop Zero Trust Operational Architecture.</b> Real-time device telemetry is filtered at the broker, "
+            "analyzed across sliding windows, evaluated against fleet congestion context, mapped to dynamic access decisions (ALLOW, RESTRICT, CHALLENGE, DENY), "
+            "and continuously fed back into Mosquitto ACLs and the dynamic risk scheduler.",
+            callout_style
+        ))
 
     story.append(PageBreak())
 

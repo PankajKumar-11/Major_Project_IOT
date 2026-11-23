@@ -20,7 +20,9 @@ However, in realistic cyber-physical environments, **authenticated devices can b
 
 ---
 
-## 2. System Architecture
+## 2. System Architecture & Complete Operational Workflow
+
+### 2.1 High-Level Logical System Architecture
 
 ```mermaid
 flowchart TD
@@ -70,6 +72,50 @@ flowchart TD
     TE & PE & NM & BM -->|Audit Log & State| DB
     DB --> API
     API --> UI
+```
+
+### 2.2 Complete Operational Workflow Diagram
+
+![Zero Trust Operational Workflow Diagram](assets/workflow_diagram.png)
+
+```mermaid
+flowchart TD
+    START([IoT Device Packet Ingestion]) --> STEP1[Extract Headers: Timestamp, Seq, Nonce, Topic, Payload]
+    
+    STEP1 --> GATE1{Current Access Policy == DENY or Topic Unauthorized?}
+    GATE1 -- Yes --> DROP[Block Message at Broker & Log Security Alert]
+    DROP --> OVERRIDE[Trigger Critical Security Override: Trust -> 0, Policy -> DENY]
+    OVERRIDE --> SYNC_ACL[Synchronize Mosquitto Dynamic ACL & DB]
+    
+    GATE1 -- No --> DELIVER[Broker Routes Message to Authorized Subscribers]
+    DELIVER --> REC_BEHAV[Behavior Monitor: Sliding Window Metrics & Replay Nonce Check]
+    DELIVER --> REC_NET[Network Monitor: Fleet-Wide Latency Ping Sampling]
+    
+    REC_BEHAV & REC_NET --> EVAL_COND{Assessment Interval Due?}
+    EVAL_COND -- No --> SLEEP([Await Next Message])
+    
+    EVAL_COND -- Yes --> CHECK_CONGESTION{Fleet Congestion Detected?<br/>Latency >= 120ms across >= 60% devices}
+    CHECK_CONGESTION -- Yes --> DISCOUNT[Apply Context Discount: 70% Reduction on Rate/Latency Penalty]
+    CHECK_CONGESTION -- No --> NODISCOUNT[Zero Discount: Full Raw Penalties Applied]
+    
+    DISCOUNT & NODISCOUNT --> CALC_CONF[Confidence Engine: Evaluate Evidence Quantity & Metric Stability]
+    CALC_CONF --> CALC_RISK[Trust Engine: 5-Factor Weighted Risk Score Calculation]
+    CALC_RISK --> SMOOTH[Exponential Trust Smoothing: Trust = 0.70*Prev + 0.30*Raw]
+    
+    SMOOTH --> POLICY_BRANCH{Zero Trust Policy Engine Evaluation}
+    
+    POLICY_BRANCH -- "Trust >= 80 & Conf >= 0.60" --> DEC_ALLOW["Decision: ALLOW<br/>Full Topic Access<br/>Next Interval: 30s"]
+    POLICY_BRANCH -- "50 <= Trust < 80" --> DEC_RESTRICT["Decision: RESTRICT<br/>Filter Sensitive Actuators<br/>Next Interval: 10s"]
+    POLICY_BRANCH -- "Trust >= 50 & Conf < 0.40" --> DEC_CHALLENGE["Decision: CHALLENGE<br/>Issue Fresh Cryptographic Nonce"]
+    POLICY_BRANCH -- "Trust < 50 or Hard Violation" --> DEC_DENY["Decision: DENY<br/>Quarantine Device & Revoke Topics<br/>Next Interval: 2s"]
+    
+    DEC_CHALLENGE --> VERIFY_NONCE{Nonce HMAC Verified?}
+    VERIFY_NONCE -- Yes --> DEC_ALLOW
+    VERIFY_NONCE -- No --> DEC_DENY
+    
+    DEC_ALLOW & DEC_RESTRICT & DEC_DENY --> SYNC_ACL
+    SYNC_ACL --> AUDIT[Record Audit Event in SQLite & Refresh Streamlit SOC Dashboard]
+    AUDIT --> LOOP([Feedback Loop to Next Broker Ingestion Cycle])
 ```
 
 ---
