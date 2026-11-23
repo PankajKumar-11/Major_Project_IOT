@@ -3,10 +3,27 @@ Main Streamlit Application for Behaviour-Aware Zero Trust IoT Security Framework
 Professional Dark Cybersecurity SOC Dashboard for University Professor Demonstration.
 """
 import sys
+import builtins
 from pathlib import Path
 
-# Ensure project root is in sys.path regardless of execution directory
-ROOT_DIR = Path(__file__).resolve().parent.parent
+# --- Robust sys.path setup ---
+# Strategy 1: use __file__ (works when run directly via streamlit run dashboard/app.py)
+_THIS_FILE = Path(__file__).resolve()
+ROOT_DIR = _THIS_FILE.parent.parent  # .../Major_project
+
+# Strategy 2: check builtins (set by root app.py when run via streamlit run app.py)
+if not (ROOT_DIR / "config.py").exists():
+    _bt = getattr(builtins, "_ZT_ROOT_DIR", None)
+    if _bt:
+        ROOT_DIR = Path(_bt)
+
+# Strategy 3: walk up from CWD until we find config.py (project root marker)
+if not (ROOT_DIR / "config.py").exists():
+    for _p in [Path.cwd()] + list(Path.cwd().parents):
+        if (_p / "config.py").exists():
+            ROOT_DIR = _p
+            break
+
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
